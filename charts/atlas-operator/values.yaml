@@ -48,6 +48,15 @@ affinity: {}
 # Set this to true to keep the devdb pods around.
 prewarmDevDB: true
 
+devDB:
+  prewarm: true
+  images:
+    postgres: "postgres:latest"
+    sqlServer: "mcr.microsoft.com/mssql/server:2022-latest"
+    mySql: "mysql:latest"
+    mariaDb: "mariadb:latest"
+    clickHouse: "clickhouse/clickhouse-server:latest"
+
 # Enable this to allow custom project configuration
 # Warning: This setting enables users to use the `external` and `sql` data sources
 # which can be used to execute arbitrary commands and queries. Use with caution.

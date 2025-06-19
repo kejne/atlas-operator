@@ -40,6 +40,7 @@ import (
 	"ariga.io/atlas-go-sdk/atlasexec"
 	"github.com/ariga/atlas-operator/api/v1alpha1"
 	dbv1alpha1 "github.com/ariga/atlas-operator/api/v1alpha1"
+	"github.com/ariga/atlas-operator/internal/config"
 	"github.com/ariga/atlas-operator/internal/controller/watch"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
@@ -85,7 +86,7 @@ type (
 
 const sqlLimitSize = 1024
 
-func NewAtlasSchemaReconciler(mgr Manager, prewarmDevDB bool) *AtlasSchemaReconciler {
+func NewAtlasSchemaReconciler(mgr Manager) *AtlasSchemaReconciler {
 	rec := mgr.GetEventRecorderFor("atlasschema-controller")
 	r := &AtlasSchemaReconciler{
 		Client:           mgr.GetClient(),
@@ -93,7 +94,7 @@ func NewAtlasSchemaReconciler(mgr Manager, prewarmDevDB bool) *AtlasSchemaReconc
 		configMapWatcher: watch.New(),
 		secretWatcher:    watch.New(),
 		recorder:         rec,
-		devDB:            newDevDB(mgr, rec, prewarmDevDB),
+		devDB:            newDevDB(mgr, rec),
 	}
 	return r
 }

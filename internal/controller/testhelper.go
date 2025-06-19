@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	dbv1alpha1 "github.com/ariga/atlas-operator/api/v1alpha1"
+	"github.com/ariga/atlas-operator/internal/config"
 )
 
 type (
@@ -121,7 +122,7 @@ func (m *mockAtlasExec) MigrateStatus(context.Context, *atlasexec.MigrateStatusP
 func newRunner[T interface {
 	Reconcile(context.Context, reconcile.Request) (reconcile.Result, error)
 	SetAtlasClient(AtlasExecFn)
-}](fn func(Manager, bool) T, modify func(*fake.ClientBuilder), mock *mockAtlasExec) (*helper, runner) {
+}](fn func(Manager, *config.DevDBConfig) T, modify func(*fake.ClientBuilder), mock *mockAtlasExec) (*helper, runner) {
 	scheme := runtime.NewScheme()
 	clientgoscheme.AddToScheme(scheme)
 	dbv1alpha1.AddToScheme(scheme)
@@ -135,7 +136,7 @@ func newRunner[T interface {
 		client:   c,
 		recorder: r,
 		scheme:   scheme,
-	}, true)
+	}, &config.DevDBConfig{})
 	a.SetAtlasClient(func(s string, c *Cloud) (AtlasExec, error) {
 		if mock == nil {
 			return NewAtlasExec(s, c)

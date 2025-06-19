@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-cm
+data:
+  devdb.yaml: |
+    prewarm: {{ .Values.devdb.prewarm }}
+    images:
+      postgres: "{{ .Values.devdb.images.postgres }}"
+      sqlServer: "{{ .Values.devdb.images.sqlServer }}"
+      mySql: "{{ .Values.devdb.images.mySql }}"
+      mariaDb: "{{ .Values.devdb.images.mariaDb }}"
+      clickHouse: "{{ .Values.devdb.images.clickHouse }}"
+

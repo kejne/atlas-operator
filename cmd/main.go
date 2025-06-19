@@ -40,6 +40,7 @@ import (
 	//+kubebuilder:scaffold:imports
 
 	dbv1alpha1 "github.com/ariga/atlas-operator/api/v1alpha1"
+	"github.com/ariga/atlas-operator/internal/config"
 	"github.com/ariga/atlas-operator/internal/controller"
 	"github.com/ariga/atlas-operator/internal/vercheck"
 )
@@ -56,8 +57,6 @@ const (
 	// envNoUpdate when enabled it cancels checking for update
 	envNoUpdate = "SKIP_VERCHECK"
 	vercheckURL = "https://vercheck.ariga.io"
-	// prewarmDevDB when disabled it deletes the devDB pods after the schema is created
-	prewarmDevDB = "PREWARM_DEVDB"
 	// allowCustomConfig when enabled it allows the use of custom config
 	allowsCustomConfig = "ALLOW_CUSTOM_CONFIG"
 )
@@ -142,10 +141,10 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-	prewarmDevDB := getPrewarmDevDBEnv()
+
 	allowCustomConfig := getAllowCustomConfigEnv()
 	// Setup controller for AtlasSchema
-	schemaController := controller.NewAtlasSchemaReconciler(mgr, prewarmDevDB)
+	schemaController := controller.NewAtlasSchemaReconciler(mgr)
 	schemaController.SetAtlasClient(controller.NewAtlasExec)
 	if allowCustomConfig {
 		schemaController.AllowCustomConfig()
@@ -155,7 +154,7 @@ func main() {
 		os.Exit(1)
 	}
 	// Setup controller for AtlasMigration
-	migrationController := controller.NewAtlasMigrationReconciler(mgr, prewarmDevDB)
+	migrationController := controller.NewAtlasMigrationReconciler(mgr)
 	migrationController.SetAtlasClient(controller.NewAtlasExec)
 	if allowCustomConfig {
 		migrationController.AllowCustomConfig()
@@ -216,21 +215,6 @@ func checkForUpdate() {
 		}
 		<-time.After(24 * time.Hour)
 	}
-}
-
-// getPrewarmDevDBEnv returns the value of the env var PREWARM_DEVDB.
-// if the env var is not set, it returns true.
-func getPrewarmDevDBEnv() bool {
-	env := os.Getenv(prewarmDevDB)
-	if env == "" {
-		return true
-	}
-	prewarmDevDB, err := strconv.ParseBool(env)
-	if err != nil {
-		setupLog.Error(err, "invalid value for env var PREWARM_DEVDB, expected true or false")
-		os.Exit(1)
-	}
-	return prewarmDevDB
 }
 
 // getAllowCustomConfigEnv returns the value of the env var ALLOW_CUSTOM_CONFIG.

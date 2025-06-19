@@ -41,6 +41,7 @@ import (
 	"ariga.io/atlas-go-sdk/atlasexec"
 	"ariga.io/atlas/sql/migrate"
 	dbv1alpha1 "github.com/ariga/atlas-operator/api/v1alpha1"
+	"github.com/ariga/atlas-operator/internal/config"
 	"github.com/ariga/atlas-operator/internal/controller/watch"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/zclconf/go-cty/cty"
@@ -85,7 +86,7 @@ type (
 	}
 )
 
-func NewAtlasMigrationReconciler(mgr Manager, prewarmDevDB bool) *AtlasMigrationReconciler {
+func NewAtlasMigrationReconciler(mgr Manager, devDBConfig *config.DevDBConfig) *AtlasMigrationReconciler {
 	r := mgr.GetEventRecorderFor("atlasmigration-controller")
 	return &AtlasMigrationReconciler{
 		Client:           mgr.GetClient(),
@@ -93,7 +94,7 @@ func NewAtlasMigrationReconciler(mgr Manager, prewarmDevDB bool) *AtlasMigration
 		configMapWatcher: watch.New(),
 		secretWatcher:    watch.New(),
 		recorder:         r,
-		devDB:            newDevDB(mgr, r, prewarmDevDB),
+		devDB:            newDevDB(mgr, r, devDBConfig),
 	}
 }
 

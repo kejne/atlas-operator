@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	dbv1alpha1 "github.com/ariga/atlas-operator/api/v1alpha1"
+	"github.com/ariga/atlas-operator/internal/config"
 )
 
 const (
@@ -54,13 +55,13 @@ type (
 		client.Client
 		scheme   *runtime.Scheme
 		recorder record.EventRecorder
-		prewarm  bool
+		config   *config.DevDBConfig
 	}
 )
 
 var errWaitDevDB = transient(errors.New("waiting for dev database to be ready"))
 
-func newDevDB(mgr Manager, r record.EventRecorder, prewarm bool) *devDBReconciler {
+func newDevDB(mgr Manager, r record.EventRecorder) *devDBReconciler {
 	if r == nil {
 		// Only create a new recorder if it is not provided.
 		// This keep the controller from creating multiple recorders.
@@ -70,7 +71,6 @@ func newDevDB(mgr Manager, r record.EventRecorder, prewarm bool) *devDBReconcile
 		Client:   mgr.GetClient(),
 		scheme:   mgr.GetScheme(),
 		recorder: r,
-		prewarm:  prewarm,
 	}
 }
 
@@ -78,7 +78,7 @@ func newDevDB(mgr Manager, r record.EventRecorder, prewarm bool) *devDBReconcile
 func (r *devDBReconciler) cleanUp(ctx context.Context, sc client.Object) {
 	key := nameDevDB(sc)
 	// If prewarmDevDB is false, scale down the deployment to 0
-	if !r.prewarm {
+	if !config.MustGetDevDBConfig().Prewarm {
 		deploy := &appsv1.Deployment{}
 		err := r.Get(ctx, key, deploy)
 		if err != nil {
@@ -181,7 +181,7 @@ func (r *devDBReconciler) devURL(ctx context.Context, sc client.Object, targetUR
 }
 
 // deploymentDevDB returns a deployment for a dev database.
-func deploymentDevDB(key types.NamespacedName, targetURL url.URL) (*appsv1.Deployment, error) {
+func (r *devDBReconciler) deploymentDevDB(key types.NamespacedName, targetURL url.URL) (*appsv1.Deployment, error) {
 	drv := dbv1alpha1.DriverBySchema(targetURL.Scheme)
 	var (
 		user string
@@ -215,7 +215,7 @@ func deploymentDevDB(key types.NamespacedName, targetURL url.URL) (*appsv1.Deplo
 			q.Set("search_path", "public")
 		}
 		// Containers
-		c.Image = "postgres:latest"
+		c.Image = config.MustGetDevDBConfig().Images.Postgres
 		c.Ports = []corev1.ContainerPort{
 			{Name: drv.String(), ContainerPort: 5432},
 		}
@@ -236,7 +236,7 @@ func deploymentDevDB(key types.NamespacedName, targetURL url.URL) (*appsv1.Deplo
 			q.Set("mode", "DATABASE")
 		}
 		// Containers
-		c.Image = "mcr.microsoft.com/mssql/server:2022-latest"
+		c.Image = config.MustGetDevDBConfig().Images.SQLServer
 		c.Ports = []corev1.ContainerPort{
 			{Name: drv.String(), ContainerPort: 1433},
 		}
@@ -266,7 +266,7 @@ func deploymentDevDB(key types.NamespacedName, targetURL url.URL) (*appsv1.Deplo
 		// URLs
 		user, pass, path = "root", "pass", ""
 		// Containers
-		c.Image = "mysql:latest"
+		c.Image = config.MustGetDevDBConfig().Images.MySQL
 		c.Ports = []corev1.ContainerPort{
 			{Name: drv.String(), ContainerPort: 3306},
 		}
@@ -292,7 +292,7 @@ func deploymentDevDB(key types.NamespacedName, targetURL url.URL) (*appsv1.Deplo
 		// URLs
 		user, pass, path = "root", "pass", ""
 		// Containers
-		c.Image = "mariadb:latest"
+		c.Image = config.MustGetDevDBConfig().Images.MariaDB
 		c.Ports = []corev1.ContainerPort{
 			{Name: drv.String(), ContainerPort: 3306},
 		}
@@ -318,7 +318,7 @@ func deploymentDevDB(key types.NamespacedName, targetURL url.URL) (*appsv1.Deplo
 		// URLs
 		user, pass, path = "root", "pass", ""
 		// Containers
-		c.Image = "clickhouse/clickhouse-server:latest"
+		c.Image = config.MustGetDevDBConfig().Images.ClickHouse
 		c.Ports = []corev1.ContainerPort{
 			{Name: drv.String(), ContainerPort: 9000},
 		}
